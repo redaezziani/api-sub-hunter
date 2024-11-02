@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.3"
+        integrity="sha384-0895/pl2MU10Hqc6jd4RvrthNlDiE9U1tWmX7WRESftEDRosgxNsQG/Ze9YMRzHq"
+        crossorigin="anonymous"></script>
+    <title>Document</title>
+    <script>
+        function extractVideoId(url) {
+            // extart the id :https://www.youtube.com/watch?v=geAcAzheu_Y
+            const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+            const match = url.match(regex);
+            return match ? match[1] : null;
+
+        }
+
+        async function handleSubmit(event) {
+            event.preventDefault(); 
+            const urlInput = document.getElementById('subtitles').value;
+            const videoId = extractVideoId(urlInput);
+
+            if (videoId) {
+                const apiUrl = `/subtitles/${videoId}`;
+                
+                try {
+                    const response = await fetch(apiUrl);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    console.log(data);
+                    displaySubtitles(data);
+                } catch (error) {
+                    alert(`Failed to fetch subtitles: ${error.message}`);
+                }
+            } else {
+                alert('Invalid YouTube URL. Please check and try again.');
+            }
+        }
+
+        function displaySubtitles(data) {
+            const output = document.getElementById('output');
+            output.classList.remove('hidden');
+            let isLoading = true;
+            const button = document.getElementById('submit');
+            button.innerHTML = isLoading ? 'Loading...' : 'Get Subtitles';
+            const subtitles = data.subtitles.slice(0, 5);
+            const subtitlesAutoTrans = data.subtitlesAutoTrans.slice(0, 5);
+            const subtitlesHtml = subtitles.map(sub => `<li><button class="space-x-2 justify-center items-center flex" ><svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-file-download"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /><path d="M12 17v-6" /><path d="M9.5 14.5l2.5 2.5l2.5 -2.5" /></svg> ${sub.name}</button></li>`).join('');
+            const subtitlesAutoTransHtml = subtitlesAutoTrans.map(sub => `<li><button class="space-x-2 justify-center items-center flex" > <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-file-download"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /><path d="M12 17v-6" /><path d="M9.5 14.5l2.5 2.5l2.5 -2.5" /></svg>${sub.name}</button></li>`).join('');
+            output.innerHTML = `<h2 class="text-lg font-bold">${data.title}</h2>
+                                <img src="${data.thumbnail}" alt="Thumbnail" class="my-2">
+                                <p><strong>Duration:</strong> ${data.duration}</p>
+                                <h3 class="mt-2">Subtitles:</h3>
+                                <ul>${subtitlesHtml}</ul>
+                                <h3 class="mt-2">Auto Translated Subtitles:</h3>
+                                <ul>${subtitlesAutoTransHtml}</ul>
+                                `;
+        
+        // remove the loading state
+        isLoading = false;
+        button.innerHTML = isLoading ? 'Loading...' : 'Get Subtitles';
+        }
+    </script>
+</head>
+
+<body class="bg-gray-100 flex px-2 py-4 items-center flex-col gap-x-2 justify-start h-screen">
+    <form onsubmit="handleSubmit(event)" class="w-full max-w-lg">
+        <input type="text" id="subtitles" name="subtitles" required
+            class="w-full mt-1 text-sm text-gray-700 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+            placeholder="Paste a youtube link here">
+        <button
+            id= "submit"
+            class="w-full mt-3  text-sm text-white bg-indigo-500 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-400 focus:outline-none">
+            Get Subtitles
+        </button>
+    </form>
+    
+    <div id="output" class="mt-4 w-full max-w-lg p-4 bg-white hidden border border-gray-300 rounded-lg">
+
+    </div>
+</body>
+
+</html>
