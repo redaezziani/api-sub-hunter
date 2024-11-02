@@ -1,0 +1,8 @@
+# Ignore the Dockerfile and Docker ignore file itself
+Dockerfile
+.dockerignore
+
+# Ignore unnecessary files and folders
+ui/*.html
+*.log
+*.tmp
