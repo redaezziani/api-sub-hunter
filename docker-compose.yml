@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  watchtower:
+    image: containrrr/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock  # Allows Watchtower to monitor Docker events
+    command: --interval 300  # Checks for updates every 5 minutes (adjust as needed)
+
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    command:
+      - "--api.insecure=true"                    # Enable Traefik's API dashboard (insecure, for testing purposes)
+      - "--providers.docker=true"                # Enable Docker as a provider
+      - "--entrypoints.web.address=:80"          # Define an entry point for HTTP on port 80
+      - "--entrypoints.websecure.address=:443"   # Define an entry point for HTTPS on port 443
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true" # Use Let's Encrypt
+      - "--certificatesresolvers.myresolver.acme.email=" # Add your email
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json" # Storage location for certificates
+    ports:
+      - "80:80"       # Expose port 80 for HTTP
+      - "443:443"     # Expose port 443 for HTTPS
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro" # Allow Traefik to read Docker events
+      - "./letsencrypt:/letsencrypt"   # Persist Let's Encrypt certificates
+
+  api-sub-hunter:
+    build:
+      context: .
+    container_name: api-sub-hunter
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api-sub-hunter.rule=Host(`your-domain.com`)" # Replace with your domain
+      - "traefik.http.routers.api-sub-hunter.entrypoints=websecure"
+      - "traefik.http.routers.api-sub-hunter.tls.certresolver=myresolver" # Use Let's Encrypt for SSL
+    expose:
+      - "8080" # Expose internal port for Traefik routing
